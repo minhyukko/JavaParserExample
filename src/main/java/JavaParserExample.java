@@ -4,12 +4,9 @@ import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.*;
-import com.github.javaparser.ast.stmt.BlockStmt;
-import com.github.javaparser.ast.stmt.ExpressionStmt;
-import com.github.javaparser.ast.stmt.TryStmt;
+import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.stmt.Statement;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.body.VariableDeclarator;
@@ -213,7 +210,7 @@ public class JavaParserExample {
                 BlockStmt methodBody = targetMethod.getBody().orElseThrow();
 
                 // Checks whether the print statement that is about to be inserted is within the range of the method or not.
-                if (assignExprLineNum.peek() >= targetMethod.getRange().get().begin.line && assignExprLineNum.peek() <= targetMethod.getRange().get().end.line) {
+                if (assignExprLineNum.size() > 0 && assignExprLineNum.peek() >= targetMethod.getRange().get().begin.line && assignExprLineNum.peek() <= targetMethod.getRange().get().end.line) {
                     int lineNum = targetMethod.getRange().get().begin.line;
                     parseStatements(targetMethod, methodBody, assignExprLineNum, assignExprVarName, codeSnippet);
 //                    for (int j = 0; j < methodBody.getStatements().size(); j++) {
@@ -295,26 +292,29 @@ public class JavaParserExample {
     public static void parseStatements(MethodDeclaration targetMethod, BlockStmt methodBody, Queue<Integer> assignExprLineNum, Queue<String> assignExprVarName, Statement codeSnippet) {
         for (int j = 0; j < methodBody.getStatements().size(); j++) {
 //            int gap = methodBody.getStatement(j).getRange().get().end.line - methodBody.getStatement(j).getRange().get().begin.line + 1;
-            if (assignExprLineNum.size() > 0 && assignExprLineNum.peek() >= methodBody.getStatement(j).getRange().get().begin.line && assignExprLineNum.peek() <= methodBody.getStatement(j).getRange().get().end.line) {
-                if (methodBody.getStatement(j).isExpressionStmt()) {
-//                    String variableName = methodBody.getStatement(j).getTokenRange().get().getBegin().getText();
-                    methodBody.getStatements().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
-                    assignExprLineNum.poll();
-                } else if (methodBody.getStatement(j).isTryStmt()) {
+            if (assignExprLineNum.size() > 0 && !methodBody.getStatement(j).getRange().isEmpty() && assignExprLineNum.peek() >= methodBody.getStatement(j).getRange().get().begin.line && assignExprLineNum.peek() <= methodBody.getStatement(j).getRange().get().end.line) {
+                if (methodBody.getStatement(j).isTryStmt()) {
                     TryStmt ts = (TryStmt) methodBody.getStatement(j);
                     BlockStmt bs = ts.getTryBlock();
                     // A recursive method?
                     parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
                 } else if (methodBody.getStatement(j).isWhileStmt()) {
+                    BlockStmt bs = (BlockStmt) methodBody.getStatement(j).getChildNodes().get(1);
                     if (methodBody.getStatement(j).getRange().get().begin.line == assignExprLineNum.peek()) {
-                        TokenRange variableName = methodBody.getStatement(j).getTokenRange().get();
-                        BlockStmt bs = (BlockStmt) methodBody.getStatement(j).getChildNodes().get(1);
                         bs.getStatements().add(0, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
                         assignExprLineNum.poll();
 //                        methodBody.getStatements().add(j, codeSnippet);
 //                        assignExprLineNum.poll();
                     }
+                    parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+                } else if (methodBody.getStatement(j).isForStmt()) {
+                    ForStmt fs = (ForStmt) methodBody.getStatement(j);
+                    BlockStmt bs = (BlockStmt) fs.getBody();
+                    parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
                     System.out.println("Hello");
+                } else {
+                    methodBody.getStatements().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+                    assignExprLineNum.poll();
                 }
             }
         }
