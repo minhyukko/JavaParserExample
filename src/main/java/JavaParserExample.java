@@ -346,7 +346,6 @@ public class JavaParserExample {
                         BlockStmt bs = new BlockStmt(se.getStatements());
                         parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
                     }
-                    System.out.println(1);
                 } else { // Expression, Assert
                     methodBody.getStatements().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
                     assignExprLineNum.poll();
