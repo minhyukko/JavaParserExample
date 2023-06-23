@@ -153,7 +153,7 @@ public class JavaParserExample {
                     }
                 };
 
-                // Visit all methods in the compilation unit to extract variable names
+                // Visit all cd in the compilation unit to extract variable names
                 methodVisitor.visit(compilationUnit, null);
 
 
@@ -189,8 +189,14 @@ public class JavaParserExample {
                 assignExprVarName.add(variableDeclarator.getTarget().toString());
             });
 
+            List<ConstructorDeclaration> c = compilationUnit.findAll(ConstructorDeclaration.class);
             // Retrieve the list of lines in the compilation unit
-            List<MethodDeclaration> methods = compilationUnit.findAll(MethodDeclaration.class);
+            List<MethodDeclaration> method = compilationUnit.findAll(MethodDeclaration.class);
+
+
+            List<CallableDeclaration> cd = new ArrayList<CallableDeclaration>();
+            cd.addAll(c);
+            cd.addAll(method);
 
             // Locate the desired line number where you want to insert the code
             int targetLineNumber = 2;
@@ -205,12 +211,23 @@ public class JavaParserExample {
             Statement codeSnippet = new ExpressionStmt(new NameExpr("System.out.println(" + "variable" + ")"));
 
             // Find the method declaration at the target line
-            for (int i = 0; i < methods.size(); i++) {
-//                MethodDeclaration targetMethod = methods.get(0); // Example: Get the first method declaration
-                MethodDeclaration targetMethod = methods.get(i); // Example: Get the first method declaration
-                BlockStmt methodBody = targetMethod.getBody().orElseThrow();
+            for (int i = 0; i < cd.size(); i++) {
+//                MethodDeclaration targetMethod = cd.get(0); // Example: Get the first method declaration
+                CallableDeclaration targetMethod = cd.get(i); // Example: Get the first method declaration
+//                BlockStmt methodBody = targetMethod.getBody().orElseThrow();
+                BlockStmt methodBody = null;
+                if (cd.get(i).isConstructorDeclaration()) {
+                    ConstructorDeclaration targetMethod1 = (ConstructorDeclaration) cd.get(i); // Example: Get the first method declaration
+                    methodBody = targetMethod1.getBody();
+                } else if (cd.get(i).isMethodDeclaration()) {
+                    MethodDeclaration targetMethod1 = (MethodDeclaration) cd.get(i); // Example: Get the first method declaration
+                    methodBody = targetMethod1.getBody().orElseThrow();
+                }
 
                 // Checks whether the print statement that is about to be inserted is within the range of the method or not.
+//                System.out.println(assignExprLineNum.peek() >= targetMethod.getRange().get().begin.line);
+//                System.out.println(assignExprLineNum.peek());
+//                System.out.println(targetMethod.getRange().get().begin.line);
                 if (assignExprLineNum.size() > 0 && assignExprLineNum.peek() >= targetMethod.getRange().get().begin.line && assignExprLineNum.peek() <= targetMethod.getRange().get().end.line) {
                     int lineNum = targetMethod.getRange().get().begin.line;
                     parseStatements(targetMethod, methodBody, assignExprLineNum, assignExprVarName, codeSnippet);
@@ -281,7 +298,7 @@ public class JavaParserExample {
         }
     }
 
-    public static void parseStatements(MethodDeclaration targetMethod, BlockStmt methodBody, Queue<Integer> assignExprLineNum, Queue<String> assignExprVarName, Statement codeSnippet) {
+    public static void parseStatements(CallableDeclaration targetMethod, BlockStmt methodBody, Queue<Integer> assignExprLineNum, Queue<String> assignExprVarName, Statement codeSnippet) {
         for (int j = 0; j < methodBody.getStatements().size(); j++) {
 //            int gap = methodBody.getStatement(j).getRange().get().end.line - methodBody.getStatement(j).getRange().get().begin.line + 1;
             if (assignExprLineNum.size() > 0 && !methodBody.getStatement(j).getRange().isEmpty() && assignExprLineNum.peek() >= methodBody.getStatement(j).getRange().get().begin.line && assignExprLineNum.peek() <= methodBody.getStatement(j).getRange().get().end.line) {
@@ -307,7 +324,13 @@ public class JavaParserExample {
                     parseStatements(targetMethod, (BlockStmt) methodBody.getStatement(j), assignExprLineNum, assignExprVarName, codeSnippet);
                 } else if (methodBody.getStatement(j).isIfStmt()) {
                     IfStmt is = (IfStmt) methodBody.getStatement(j);
-                    parseStatements(targetMethod, (BlockStmt) is.getThenStmt(), assignExprLineNum, assignExprVarName, codeSnippet);
+                    System.out.println(is.getThenStmt().getClass().getName().equals("com.github.javaparser.ast.stmt.ExpressionStmt"));
+                    if (is.getThenStmt().getClass().getName().equals("com.github.javaparser.ast.stmt.ExpressionStmt")) { // Handles the case of one line if statement
+                        methodBody.getStatements().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+                        assignExprLineNum.poll();
+                    } else {
+                        parseStatements(targetMethod, (BlockStmt) is.getThenStmt(), assignExprLineNum, assignExprVarName, codeSnippet);
+                    }
                     if (is.hasElseBlock()) {
                         parseStatements(targetMethod, (BlockStmt) is.getElseStmt().get(), assignExprLineNum, assignExprVarName, codeSnippet);
                     }
