@@ -258,15 +258,6 @@ public class JavaParserExample {
                     .filter(f -> f.isPublic() && f.isStatic())
                     .forEach(f -> System.out.println("Check static field at line " + f.getRange().map(r -> r.begin.line).orElse(-1)));
 
-//            // Creates a source code
-//            ClassOrInterfaceDeclaration myClass = compilationUnit
-//                    .addClass("MyClass")
-//                    .setPublic(true);
-//            myClass.addField(int.class, "A_CONSTANT", Modifier.Keyword.PUBLIC, Modifier.Keyword.STATIC);
-//            myClass.addField(String.class, "name", Modifier.Keyword.PRIVATE);
-//            String code = myClass.toString();
-//            System.out.println(code);
-
             MethodDeclaration toStringMethod = new MethodDeclaration()
                     .setModifiers(Modifier.Keyword.PUBLIC)
                     .setType("String")
