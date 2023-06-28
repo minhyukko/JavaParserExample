@@ -198,6 +198,9 @@ public class JavaParserExample {
             cd.addAll(c);
             cd.addAll(method);
 
+            int begin = cd.get(0).getRange().get().begin.line;
+            cd = cdSort(cd);
+
             // Locate the desired line number where you want to insert the code
             int targetLineNumber = 2;
 
@@ -218,10 +221,12 @@ public class JavaParserExample {
                 BlockStmt methodBody = null;
                 if (cd.get(i).isConstructorDeclaration()) {
                     ConstructorDeclaration targetMethod1 = (ConstructorDeclaration) cd.get(i); // Example: Get the first method declaration
-                    methodBody = targetMethod1.getBody();
+                    if (!targetMethod1.getBody().isEmpty())
+                        methodBody = targetMethod1.getBody();
                 } else if (cd.get(i).isMethodDeclaration()) {
                     MethodDeclaration targetMethod1 = (MethodDeclaration) cd.get(i); // Example: Get the first method declaration
-                    methodBody = targetMethod1.getBody().orElseThrow();
+                    if (!targetMethod1.getBody().isEmpty())
+                        methodBody = targetMethod1.getBody().orElseThrow();
                 }
 
                 // Checks whether the print statement that is about to be inserted is within the range of the method or not.
@@ -322,7 +327,14 @@ public class JavaParserExample {
                     System.out.println("bool:" + fs.getBody().isExpressionStmt());
                     if (fs.getBody().isExpressionStmt()) { // Handles the case of one line if statement
                         if (assignExprLineNum.peek() <= fs.getBody().getRange().get().begin.line) {
-                            methodBody.getStatements().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+                            if (assignExprVarName.peek().contains("[")) { // Checks whether an entire array has to be printed or not.
+                                int index = assignExprVarName.peek().indexOf('[');
+                                // Retrieve the substring until "["
+                                String substring = assignExprVarName.poll().substring(0, index);
+                                methodBody.getStatements().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + substring + ": \" + Arrays.toString(" + substring + "))")));
+                            } else {
+                                methodBody.getStatements().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+                            }
                             assignExprLineNum.poll();
                         }
                     } else {
@@ -416,6 +428,19 @@ public class JavaParserExample {
             }
         }
         return j;
+    }
+
+    public static List<CallableDeclaration> cdSort(List<CallableDeclaration> cd) {
+        for (int j = 1; j < cd.size(); j++) {
+            CallableDeclaration current = cd.get(j);
+            int i = j-1;
+                while ((i > -1) && (cd.get(i).getRange().get().begin.line > current.getRange().get().begin.line)) {
+                cd.set(i+1, cd.get(i));
+                i--;
+            }
+            cd.set(i+1, current);
+        }
+        return cd;
     }
 
 
