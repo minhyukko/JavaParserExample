@@ -467,6 +467,13 @@ public class JavaParserExample {
                     BlockStmt bs = ts.getTryBlock();
                     // A recursive method?
                     parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+                    if (ts.getCatchClauses().size() > 0) { // 1 or more catch block exists
+                        NodeList<CatchClause> catchClauses = ts.getCatchClauses();
+                        for (CatchClause cc: ts.getCatchClauses()) {
+                            BlockStmt bc = cc.getBody();
+                            parseStatements(targetMethod, bc, assignExprLineNum, assignExprVarName, codeSnippet);
+                        }
+                    }
                 } else if (methodBody.getStatement(j).isWhileStmt()) {
                     BlockStmt bs = (BlockStmt) methodBody.getStatement(j).getChildNodes().get(1);
                     if (methodBody.getStatement(j).getRange().get().begin.line == assignExprLineNum.peek()) {
