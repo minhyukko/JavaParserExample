@@ -456,6 +456,10 @@ public class JavaParserExample {
 
     public static void parseStatements(CallableDeclaration targetMethod, BlockStmt methodBody, Queue<Integer> assignExprLineNum, Queue<String> assignExprVarName, Statement codeSnippet) {
         for (int j = 0; j < methodBody.getStatements().size(); j++) {
+            if (assignExprLineNum.size() != 0 && assignExprLineNum.peek() <= methodBody.getRange().get().begin.line) { // Checks whether the value being printed is in the statement declaration or not/
+                methodBody.getStatements().add(j++, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+                assignExprLineNum.poll();
+            }
 //            int gap = methodBody.getStatement(j).getRange().get().end.line - methodBody.getStatement(j).getRange().get().begin.line + 1;
             if (assignExprLineNum.size() > 0 && !methodBody.getStatement(j).getRange().isEmpty() && assignExprLineNum.peek() >= methodBody.getStatement(j).getRange().get().begin.line && assignExprLineNum.peek() <= methodBody.getStatement(j).getRange().get().end.line) {
                 if (methodBody.getStatement(j).isTryStmt()) {
@@ -474,6 +478,10 @@ public class JavaParserExample {
                     parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
                 } else if (methodBody.getStatement(j).isForStmt()) {
                     ForStmt fs = (ForStmt) methodBody.getStatement(j);
+//                    if (assignExprLineNum.peek() <= fs.getRange().get().begin.line) { // Checks whether the value being printed is in the if statement of not (The value might be in the else statement)
+//                        methodBody.getStatements().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+//                        assignExprLineNum.poll();
+//                    }
                     System.out.println("bool:" + fs.getBody().isExpressionStmt());
                     if (fs.getBody().isExpressionStmt()) { // Handles the case of one line if statement
                         if (assignExprLineNum.peek() <= fs.getBody().getRange().get().begin.line) {
@@ -490,15 +498,33 @@ public class JavaParserExample {
                     } else {
                         Statement s = fs.getBody();
 //                        BlockStmt bs = new BlockStmt(new NodeList<>(s)); // An example of resolving cast exception.
-                        BlockStmt bs = new BlockStmt();
+//                        BlockStmt bs = new BlockStmt();
                         NodeList<Statement> statements = new NodeList<>();
                         statements.add(s);
-                        bs.setStatements(statements);
+                        BlockStmt bs = new BlockStmt();
+//                        bs.addStatement(statements.get(0));
+                        // Find the parent node containing the Statement
+//                        bs.setParentNode(statements.get(0));
+//                        bs.setStatements(statements);
+                        System.out.println(s.getChildNodes().get(0));
+                        for (Node node: s.getChildNodes()) {
+                            bs.addStatement(node.toString());
+                            System.out.println(1);
+                        }
+                        bs.setRange(s.getRange().get());
+                        Node n = s.getChildNodes().get(0);
                         parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+//                        bs.addStatement(s.getChildNodes().indexOf(0));
                         fs.setBody(bs);
                     }
                 } else if (methodBody.getStatement(j).isBlockStmt()) {
-                    parseStatements(targetMethod, (BlockStmt) methodBody.getStatement(j), assignExprLineNum, assignExprVarName, codeSnippet);
+                    if (methodBody.getStatement(j).getRange().get().begin.line <= assignExprLineNum.peek()) { // Statement inside the loop declaration
+                        methodBody.getStatements().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+                        assignExprLineNum.poll();
+                    } else
+                        if (methodBody.getStatement(j).getClass().getName().equals("com.github.javaparser.ast.stmt.BlockStmt")) {
+                        parseStatements(targetMethod, (BlockStmt) methodBody.getStatement(j), assignExprLineNum, assignExprVarName, codeSnippet);
+                    }
                 } else if (methodBody.getStatement(j).isIfStmt()) {
                     j = ifStmt(j, assignExprLineNum, assignExprVarName, targetMethod, codeSnippet, methodBody, methodBody.getStatement(j));
 //                    IfStmt is = (IfStmt) methodBody.getStatement(j);
