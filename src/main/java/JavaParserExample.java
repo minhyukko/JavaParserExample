@@ -198,7 +198,6 @@ public class JavaParserExample {
             cd.addAll(c);
             cd.addAll(method);
 
-            int begin = cd.get(0).getRange().get().begin.line;
             cd = cdSort(cd);
 
             // Locate the desired line number where you want to insert the code
@@ -303,6 +302,157 @@ public class JavaParserExample {
             System.err.println("File not found: " + filePath);
         }
     }
+//
+//    public static void parseStatements(CallableDeclaration targetMethod, Statement methodBody, Queue<Integer> assignExprLineNum, Queue<String> assignExprVarName, Statement codeSnippet) {
+//        System.out.println(methodBody);
+//        Node s = methodBody.getChildNodes().get(0);
+//        s.getClass().getName().equals("com.github.javaparser.ast.stmt.ExpressionStmt");
+//        System.out.println(s);
+//        for (int j = 0; j < methodBody.getChildNodes().size(); j++) {
+//            if (assignExprLineNum.size() > 0 && !methodBody.getChildNodes().get(j).getRange().isEmpty() && assignExprLineNum.peek() >= methodBody.getChildNodes().get(j).getRange().get().begin.line && assignExprLineNum.peek() <= methodBody.getChildNodes().get(j).getRange().get().end.line) {
+//                if (methodBody.getChildNodes().get(j).getClass().getName().equals("com.github.javaparser.ast.stmt.TryStmt")) {
+//                    TryStmt ts = (TryStmt) methodBody.getChildNodes().get(j);
+//                    Statement bs = ts.getTryBlock();
+//                    // A recursive method?
+//                    parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+//                } else if (methodBody.getChildNodes().get(j).getClass().getName().equals("com.github.javaparser.ast.stmt.WhileStmt")) {
+//                    BlockStmt bs = (BlockStmt) methodBody.getChildNodes().get(j).getChildNodes().get(1);
+//                    if (methodBody.getChildNodes().get(j).getRange().get().begin.line == assignExprLineNum.peek()) {
+//                        bs.getChildNodes().add(0, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+//                        assignExprLineNum.poll();
+//                    }
+//                    parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+//                } else if (methodBody.getChildNodes().get(j).getClass().getName().equals("com.github.javaparser.ast.stmt.ForStmt")) {
+//                    ForStmt fs = (ForStmt) methodBody.getChildNodes().get(j);
+//                    System.out.println("bool:" + fs.getBody().isExpressionStmt());
+//                    if (fs.getBody().isExpressionStmt()) { // Handles the case of one line if statement
+//                        if (assignExprLineNum.peek() <= fs.getBody().getRange().get().begin.line) {
+//                            if (assignExprVarName.peek().contains("[")) { // Checks whether an entire array has to be printed or not.
+//                                int index = assignExprVarName.peek().indexOf('[');
+//                                // Retrieve the substring until "["
+//                                String substring = assignExprVarName.poll().substring(0, index);
+//                                methodBody.getChildNodes().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + substring + ": \" + Arrays.toString(" + substring + "))")));
+//                            } else {
+//                                methodBody.getChildNodes().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+//                            }
+//                            assignExprLineNum.poll();
+//                        }
+//                    } else {
+//                        BlockStmt bs = (BlockStmt) fs.getBody();
+//                        parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+//                    }
+//                } else if (methodBody.getChildNodes().get(j).getClass().getName().equals("com.github.javaparser.ast.stmt.BlockStmt")) {
+//                    parseStatements(targetMethod, (BlockStmt) methodBody.getChildNodes().get(j), assignExprLineNum, assignExprVarName, codeSnippet);
+//                } else if (methodBody.getChildNodes().get(j).getClass().getName().equals("com.github.javaparser.ast.stmt.IfStmt")) {
+//                    j = ifStmt(j, assignExprLineNum, assignExprVarName, targetMethod, codeSnippet, methodBody, methodBody.getChildNodes().get(j));
+//                } else if (methodBody.getChildNodes().get(j).getClass().getName().equals("com.github.javaparser.ast.stmt.LabeledStmt")) {
+//                    if (methodBody.getChildNodes().get(j).getChildNodes().get(1) instanceof ForStmt) {
+//                        ForStmt fs = (ForStmt) methodBody.getChildNodes().get(j).getChildNodes().get(1);
+//                        BlockStmt bs = (BlockStmt) fs.getBody();
+//                        parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+//                    } else if (methodBody.getChildNodes().get(j).getChildNodes().get(1) instanceof WhileStmt) {
+//                        BlockStmt bs = (BlockStmt) methodBody.getChildNodes().get(j).getChildNodes().get(1).getChildNodes().get(1);
+//                        if (methodBody.getChildNodes().get(j).getRange().get().begin.line == assignExprLineNum.peek()) {
+//                            bs.getChildNodes().add(0, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+//                            assignExprLineNum.poll();
+//                        }
+//                        parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+//                    }
+//                } else if (methodBody.getChildNodes().get(j).getClass().getName().equals("com.github.javaparser.ast.stmt.DoStmt")) {
+//                    DoStmt ds = (DoStmt) methodBody.getChildNodes().get(j);
+//                    parseStatements(targetMethod, (BlockStmt) ds.getBody(), assignExprLineNum, assignExprVarName, codeSnippet);
+//                } else if (methodBody.getChildNodes().get(j).getClass().getName().equals("com.github.javaparser.ast.stmt.ForEachStmt")) {
+//                    ForEachStmt fes = (ForEachStmt) methodBody.getChildNodes().get(j);
+//                    parseStatements(targetMethod, (BlockStmt) fes.getBody(), assignExprLineNum, assignExprVarName, codeSnippet);
+//                } else if (methodBody.getChildNodes().get(j).getClass().getName().equals("com.github.javaparser.ast.stmt.SwitchStmt")) {
+//                    SwitchStmt ss = (SwitchStmt) methodBody.getChildNodes().get(j);
+//                    for (int k = 1; k < ss.getChildNodes().size(); k++) {
+//                        Statement se = (Statement) ss.getChildNodes().get(k);
+////                        BlockStmt bs = new BlockStmt(se.getChildNodes().get(k));
+//                        parseStatements(targetMethod, se, assignExprLineNum, assignExprVarName, codeSnippet);
+//                    }
+//                } else { // Expression, Assert
+//                    methodBody.getChildNodes().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+//                    assignExprLineNum.poll();
+//                }
+//            }
+//        }
+//    }
+
+//    public static void parseStatements(CallableDeclaration targetMethod, Statement methodBody, Queue<Integer> assignExprLineNum, Queue<String> assignExprVarName, Statement codeSnippet) {
+//        System.out.println(methodBody);
+//        Node s = methodBody.getChildNodes().get(0);
+//        System.out.println(s);
+//        for (int j = 0; j < methodBody.getStatements().size(); j++) {
+//            if (assignExprLineNum.size() > 0 && !methodBody.getStatement(j).getRange().isEmpty() && assignExprLineNum.peek() >= methodBody.getStatement(j).getRange().get().begin.line && assignExprLineNum.peek() <= methodBody.getStatement(j).getRange().get().end.line) {
+//                if (methodBody.getStatement(j).isTryStmt()) {
+//                    TryStmt ts = (TryStmt) methodBody.getStatement(j);
+//                    BlockStmt bs = ts.getTryBlock();
+//                    // A recursive method?
+//                    parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+//                } else if (methodBody.getStatement(j).isWhileStmt()) {
+//                    BlockStmt bs = (BlockStmt) methodBody.getStatement(j).getChildNodes().get(1);
+//                    if (methodBody.getStatement(j).getRange().get().begin.line == assignExprLineNum.peek()) {
+//                        bs.getStatements().add(0, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+//                        assignExprLineNum.poll();
+//                    }
+//                    parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+//                } else if (methodBody.getStatement(j).isForStmt()) {
+//                    ForStmt fs = (ForStmt) methodBody.getStatement(j);
+//                    System.out.println("bool:" + fs.getBody().isExpressionStmt());
+//                    if (fs.getBody().isExpressionStmt()) { // Handles the case of one line if statement
+//                        if (assignExprLineNum.peek() <= fs.getBody().getRange().get().begin.line) {
+//                            if (assignExprVarName.peek().contains("[")) { // Checks whether an entire array has to be printed or not.
+//                                int index = assignExprVarName.peek().indexOf('[');
+//                                // Retrieve the substring until "["
+//                                String substring = assignExprVarName.poll().substring(0, index);
+//                                methodBody.getStatements().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + substring + ": \" + Arrays.toString(" + substring + "))")));
+//                            } else {
+//                                methodBody.getStatements().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+//                            }
+//                            assignExprLineNum.poll();
+//                        }
+//                    } else {
+//                        BlockStmt bs = (BlockStmt) fs.getBody();
+//                        parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+//                    }
+//                } else if (methodBody.getStatement(j).isBlockStmt()) {
+//                    parseStatements(targetMethod, (BlockStmt) methodBody.getStatement(j), assignExprLineNum, assignExprVarName, codeSnippet);
+//                } else if (methodBody.getStatement(j).isIfStmt()) {
+//                    j = ifStmt(j, assignExprLineNum, assignExprVarName, targetMethod, codeSnippet, methodBody, methodBody.getStatement(j));
+//                } else if (methodBody.getStatement(j).isLabeledStmt()) {
+//                    if (methodBody.getStatement(j).getChildNodes().get(1) instanceof ForStmt) {
+//                        ForStmt fs = (ForStmt) methodBody.getStatement(j).getChildNodes().get(1);
+//                        BlockStmt bs = (BlockStmt) fs.getBody();
+//                        parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+//                    } else if (methodBody.getStatement(j).getChildNodes().get(1) instanceof WhileStmt) {
+//                        BlockStmt bs = (BlockStmt) methodBody.getStatement(j).getChildNodes().get(1).getChildNodes().get(1);
+//                        if (methodBody.getStatement(j).getRange().get().begin.line == assignExprLineNum.peek()) {
+//                            bs.getStatements().add(0, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+//                            assignExprLineNum.poll();
+//                        }
+//                        parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+//                    }
+//                } else if (methodBody.getStatement(j).isDoStmt()) {
+//                    DoStmt ds = (DoStmt) methodBody.getStatement(j);
+//                    parseStatements(targetMethod, (BlockStmt) ds.getBody(), assignExprLineNum, assignExprVarName, codeSnippet);
+//                } else if (methodBody.getStatement(j).isForEachStmt()) {
+//                    ForEachStmt fes = (ForEachStmt) methodBody.getStatement(j);
+//                    parseStatements(targetMethod, (BlockStmt) fes.getBody(), assignExprLineNum, assignExprVarName, codeSnippet);
+//                } else if (methodBody.getStatement(j).isSwitchStmt()) {
+//                    SwitchStmt ss = (SwitchStmt) methodBody.getStatement(j);
+//                    for (int k = 1; k < ss.getChildNodes().size(); k++) {
+//                        SwitchEntry se = (SwitchEntry) ss.getChildNodes().get(k);
+//                        BlockStmt bs = new BlockStmt(se.getStatements());
+//                        parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+//                    }
+//                } else { // Expression, Assert
+//                    methodBody.getStatements().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+//                    assignExprLineNum.poll();
+//                }
+//            }
+//        }
+//    }
 
     public static void parseStatements(CallableDeclaration targetMethod, BlockStmt methodBody, Queue<Integer> assignExprLineNum, Queue<String> assignExprVarName, Statement codeSnippet) {
         for (int j = 0; j < methodBody.getStatements().size(); j++) {
@@ -338,8 +488,14 @@ public class JavaParserExample {
                             assignExprLineNum.poll();
                         }
                     } else {
-                        BlockStmt bs = (BlockStmt) fs.getBody();
+                        Statement s = fs.getBody();
+//                        BlockStmt bs = new BlockStmt(new NodeList<>(s)); // An example of resolving cast exception.
+                        BlockStmt bs = new BlockStmt();
+                        NodeList<Statement> statements = new NodeList<>();
+                        statements.add(s);
+                        bs.setStatements(statements);
                         parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
+                        fs.setBody(bs);
                     }
                 } else if (methodBody.getStatement(j).isBlockStmt()) {
                     parseStatements(targetMethod, (BlockStmt) methodBody.getStatement(j), assignExprLineNum, assignExprVarName, codeSnippet);
