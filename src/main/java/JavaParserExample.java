@@ -461,6 +461,7 @@ public class JavaParserExample {
                 assignExprLineNum.poll();
             }
 //            int gap = methodBody.getStatement(j).getRange().get().end.line - methodBody.getStatement(j).getRange().get().begin.line + 1;
+            System.out.println(methodBody.getStatement(j).getRange().get().begin.line);
             if (assignExprLineNum.size() > 0 && !methodBody.getStatement(j).getRange().isEmpty() && assignExprLineNum.peek() >= methodBody.getStatement(j).getRange().get().begin.line && assignExprLineNum.peek() <= methodBody.getStatement(j).getRange().get().end.line) {
                 if (methodBody.getStatement(j).isTryStmt()) {
                     TryStmt ts = (TryStmt) methodBody.getStatement(j);
@@ -514,12 +515,35 @@ public class JavaParserExample {
 //                        bs.setParentNode(statements.get(0));
 //                        bs.setStatements(statements);
                         System.out.println(s.getChildNodes().get(0));
-                        for (Node node: s.getChildNodes()) {
-                            bs.addStatement(node.toString());
-                            System.out.println(1);
+
+
+                        if (fs.isForStmt() || fs.isIfStmt()) {
+                            int erf = bs.getStatements().size();
+                            if (statements.size() > 0 && statements.get(0).toString().substring(0, 3).equals("{\r\n")) { // getStatement(0).toString().substring(0, 1).equals("{\r\n")
+                                BlockStmt bstmt = (BlockStmt) statements.get(0);
+                                bs.setStatements(bstmt.getStatements());
+                            } else {
+                                bs.setStatements(statements);
+                            }
+                            bs.getStatement(0).setRange(s.getRange().get());
+                        } else {
+                            for (Node node : s.getChildNodes()) {
+//                                if (s.isForStmt()) {
+//                                    ForStmt forstmt = (ForStmt) s;
+//                                    String i = forstmt.getInitialization().get(0).toString();
+//                                    String c = forstmt.getCompare().get().toString();
+//                                    String u = forstmt.getUpdate().get(0).toString();
+//                                    String combined = "for (" + i + "; " + c + "; " + u + ")";
+//                                    bs.addStatement(combined + forstmt.getBody());
+//                                    System.out.println();
+//                                }
+                                String str = node.toString();
+                                bs.addStatement(str);
+                                System.out.println(1);
+                            }
                         }
                         bs.setRange(s.getRange().get());
-                        Node n = s.getChildNodes().get(0);
+//                        Node n = s.getChildNodes().get(0);
                         parseStatements(targetMethod, bs, assignExprLineNum, assignExprVarName, codeSnippet);
 //                        bs.addStatement(s.getChildNodes().indexOf(0));
                         fs.setBody(bs);
@@ -571,7 +595,11 @@ public class JavaParserExample {
                     parseStatements(targetMethod, (BlockStmt) ds.getBody(), assignExprLineNum, assignExprVarName, codeSnippet);
                 } else if (methodBody.getStatement(j).isForEachStmt()) {
                     ForEachStmt fes = (ForEachStmt) methodBody.getStatement(j);
-                    parseStatements(targetMethod, (BlockStmt) fes.getBody(), assignExprLineNum, assignExprVarName, codeSnippet);
+                    if (fes.getBody().isIfStmt()) {
+                        j = ifStmt(j, assignExprLineNum, assignExprVarName, targetMethod, codeSnippet, methodBody, fes.getBody());
+                    } else {
+                        parseStatements(targetMethod, (BlockStmt) fes.getBody(), assignExprLineNum, assignExprVarName, codeSnippet);
+                    }
                 } else if (methodBody.getStatement(j).isSwitchStmt()) {
                     SwitchStmt ss = (SwitchStmt) methodBody.getStatement(j);
                     for (int k = 1; k < ss.getChildNodes().size(); k++) {
