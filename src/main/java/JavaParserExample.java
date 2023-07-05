@@ -457,11 +457,11 @@ public class JavaParserExample {
     public static void parseStatements(CallableDeclaration targetMethod, BlockStmt methodBody, Queue<Integer> assignExprLineNum, Queue<String> assignExprVarName, Statement codeSnippet) {
         for (int j = 0; j < methodBody.getStatements().size(); j++) {
             if (assignExprLineNum.size() != 0 && assignExprLineNum.peek() <= methodBody.getRange().get().begin.line) { // Checks whether the value being printed is in the statement declaration or not/
-                methodBody.getStatements().add(j++, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
+                methodBody.getStatements().add(++j, new ExpressionStmt(new NameExpr("System.out.println(" + "\"" + assignExprVarName.peek() + ": \" + " + assignExprVarName.poll() + ")")));
                 assignExprLineNum.poll();
             }
 //            int gap = methodBody.getStatement(j).getRange().get().end.line - methodBody.getStatement(j).getRange().get().begin.line + 1;
-            System.out.println(methodBody.getStatement(j).getRange().get().begin.line);
+//            System.out.println(methodBody.getStatement(j).getRange().get().begin.line);
             if (assignExprLineNum.size() > 0 && !methodBody.getStatement(j).getRange().isEmpty() && assignExprLineNum.peek() >= methodBody.getStatement(j).getRange().get().begin.line && assignExprLineNum.peek() <= methodBody.getStatement(j).getRange().get().end.line) {
                 if (methodBody.getStatement(j).isTryStmt()) {
                     TryStmt ts = (TryStmt) methodBody.getStatement(j);
@@ -525,7 +525,9 @@ public class JavaParserExample {
                             } else {
                                 bs.setStatements(statements);
                             }
-                            bs.getStatement(0).setRange(s.getRange().get());
+                            if (bs.getStatements().size() == 1) { // We modify the range only when bs has one statement contained because in this case, we can guarantee the parent's range is equal to the child's range.
+                                bs.getStatement(0).setRange(s.getRange().get());
+                            }
                         } else {
                             for (Node node : s.getChildNodes()) {
 //                                if (s.isForStmt()) {
