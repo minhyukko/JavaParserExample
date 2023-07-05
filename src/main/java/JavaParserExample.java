@@ -173,7 +173,13 @@ public class JavaParserExample {
             compilationUnit.findAll(MethodDeclaration.class).forEach(methodDeclaration -> {
                 // Add a print statement to each method
                 methodDeclaration.getBody().ifPresent(body -> {
-                    body.addStatement(StaticJavaParser.parseStatement("System.out.println(\"Hello, World!\");"));
+                    System.out.println(methodDeclaration);
+                    String methodName = methodDeclaration.getName().asString();
+                    if (body.getStatements().size() > 0 && body.getStatement(body.getStatements().size() - 1).isReturnStmt()) { // Adds the method completion print statement before the return statement if return statement is present in the method.
+                        body.addStatement(body.getStatements().size() - 1, StaticJavaParser.parseStatement("System.out.println(\"Method "+ methodName + " successfully completed.\");"));
+                    } else {
+                        body.addStatement(StaticJavaParser.parseStatement("System.out.println(\"Method "+ methodName + " successfully completed.\");"));
+                    }
                 });
 
 
